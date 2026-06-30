@@ -1,0 +1,33 @@
+CREATE TYPE "DraftType" AS ENUM ('REPLY', 'FOLLOWUP');
+
+ALTER TABLE "email_accounts"
+  ADD COLUMN IF NOT EXISTS "inboxFolder" TEXT NOT NULL DEFAULT 'INBOX',
+  ADD COLUMN IF NOT EXISTS "sentFolder" TEXT,
+  ADD COLUMN IF NOT EXISTS "fetchLimit" INTEGER NOT NULL DEFAULT 50,
+  ADD COLUMN IF NOT EXISTS "autoSyncEnabled" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "excludedDomains" TEXT[] DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN IF NOT EXISTS "excludedEmails" TEXT[] DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN IF NOT EXISTS "internalDomain" TEXT NOT NULL DEFAULT 'aresourcepool.com';
+
+ALTER TABLE "leads"
+  ADD COLUMN IF NOT EXISTS "lastInboundAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "lastOutboundAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "waitingForReply" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "followupStage" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "emails"
+  ADD COLUMN IF NOT EXISTS "bccEmails" TEXT[] DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN IF NOT EXISTS "folder" TEXT NOT NULL DEFAULT 'INBOX',
+  ADD COLUMN IF NOT EXISTS "normalizedSubject" TEXT,
+  ADD COLUMN IF NOT EXISTS "receivedAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "isAutoReply" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "isBounce" BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE "drafts"
+  ADD COLUMN IF NOT EXISTS "basedOnEmailId" TEXT,
+  ADD COLUMN IF NOT EXISTS "draftType" "DraftType" NOT NULL DEFAULT 'REPLY',
+  ADD COLUMN IF NOT EXISTS "followupStage" INTEGER;
+
+CREATE INDEX IF NOT EXISTS "emails_folder_sentAt_idx" ON "emails"("folder", "sentAt");
+CREATE INDEX IF NOT EXISTS "emails_direction_sentAt_idx" ON "emails"("direction", "sentAt");
+CREATE INDEX IF NOT EXISTS "leads_waitingForReply_nextFollowUpAt_idx" ON "leads"("waitingForReply", "nextFollowUpAt");

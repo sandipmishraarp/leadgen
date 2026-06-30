@@ -1,0 +1,8 @@
+ALTER TABLE "leads"
+  ADD COLUMN IF NOT EXISTS "timezone" TEXT,
+  ADD COLUMN IF NOT EXISTS "timezoneConfidence" INTEGER,
+  ADD COLUMN IF NOT EXISTS "bestSendTime" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "lastRecommendedSendTime" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "suggestedEmailAngle" TEXT,
+  ADD COLUMN IF NOT EXISTS "replyProbability" TEXT,
+  ADD COLUMN IF NOT EXISTS "intelligenceUpdatedAt" TIMESTAMP(3);

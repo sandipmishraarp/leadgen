@@ -1,0 +1,981 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+}
+
+enum EmailAccountType {
+  LEAD_INTAKE
+  SALES_SENDER
+  ADMIN
+}
+
+enum LeadStatus {
+  WAITING_FOR_SANDIP
+  APPROVED
+  REJECTED
+  HOLD
+  ARCHIVED
+  NEEDS_REPLY
+  CLIENT_REPLIED
+  CONTACTED
+  PROPOSAL_SENT
+  NEW
+  DRAFT_CREATED
+  REPLIED
+  FOLLOW_UP_NEEDED
+  WON
+  LOST
+}
+
+enum EmailDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum DraftStatus {
+  DRAFT
+  APPROVED
+  SCHEDULED
+  SENT
+  DISCARDED
+}
+
+enum DraftType {
+  REPLY
+  FOLLOWUP
+}
+
+enum ActivityType {
+  LOGIN
+  SETTINGS_UPDATED
+  MAIL_SYNC
+  DRAFT_GENERATED
+  DRAFT_UPDATED
+  DRAFT_APPROVED
+  EMAIL_SENT
+  LEAD_STATUS_CHANGED
+  ERROR
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         UserRole      @default(ADMIN)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  activityLogs ActivityLog[]
+
+  @@map("users")
+}
+
+model EmailAccount {
+  id                    String        @id @default(cuid())
+  label                 String        @default("AResourcePool 20i")
+  emailAddress          String        @unique
+  accountType           EmailAccountType @default(SALES_SENDER)
+  role                  String        @default("Sales")
+  status                String        @default("CONNECTED")
+  description           String?
+  imapHost              String
+  imapPort              Int           @default(993)
+  imapSecure            Boolean       @default(true)
+  imapUser              String
+  imapPasswordEncrypted String
+  inboxFolder           String        @default("INBOX")
+  sentFolder            String?
+  fetchLimit            Int           @default(50)
+  autoSyncEnabled       Boolean       @default(false)
+  excludedDomains       String[]      @default([])
+  excludedEmails        String[]      @default([])
+  internalDomain        String        @default("aresourcepool.com")
+  smtpHost              String
+  smtpPort              Int           @default(465)
+  smtpSecure            Boolean       @default(true)
+  smtpUser              String
+  smtpPasswordEncrypted String
+  openaiApiKeyEncrypted String?
+  fromName              String        @default("Abhay Kumar")
+  fromTitle             String        @default("Sales & Marketing Director")
+  fromCompany           String        @default("AResourcePool")
+  isActive              Boolean       @default(true)
+  lastSyncedAt          DateTime?
+  lastTestAt            DateTime?
+  disabledAt            DateTime?
+  folderConfig          Json?
+  schedulerConfig       Json?
+  importStats           Json?
+  connectionStatus      Json?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  threads               EmailThread[]
+  emails                Email[]
+  leadIntakes           LeadIntake[]
+  leadImportJobs        LeadImportJob[]
+  folderSyncStates      EmailFolderSyncState[]
+  syncJobs              SyncJob[]
+  emailSignatures       EmailSignature[]
+
+  @@map("email_accounts")
+}
+
+model EmailFolderSyncState {
+  id             String       @id @default(cuid())
+  accountId      String
+  accountEmail   String
+  folderPath     String
+  folderRole     String?
+  lastUid        Int          @default(0)
+  highestUid     Int          @default(0)
+  uidValidity    Int?
+  lastSyncedAt   DateTime?
+  status         String       @default("PENDING")
+  importedCount  Int          @default(0)
+  skippedCount   Int          @default(0)
+  errorCount     Int          @default(0)
+  lastError      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  account        EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, folderPath])
+  @@index([accountId, status])
+  @@index([accountEmail, folderPath])
+  @@map("email_folder_sync_states")
+}
+
+model SyncJob {
+  id                String        @id @default(cuid())
+  accountId         String?
+  accountEmail      String?
+  jobType           String        @default("AUTO_SYNC")
+  status            String        @default("PENDING")
+  currentFolderPath String?
+  batchSize         Int           @default(100)
+  concurrency       Int           @default(2)
+  importedCount     Int           @default(0)
+  skippedCount      Int           @default(0)
+  errorCount        Int           @default(0)
+  remainingCount    Int           @default(0)
+  speedPerMinute    Float?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  pausedAt          DateTime?
+  nextRunAt         DateTime?
+  lastError         String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  account           EmailAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextRunAt])
+  @@index([accountId, createdAt])
+  @@index([accountEmail, status])
+  @@map("sync_jobs")
+}
+
+model Lead {
+  id              String        @id @default(cuid())
+  name            String?
+  email           String        @unique
+  company         String?
+  phone           String?
+  website         String?
+  country         String?
+  service         String?
+  clientEmailConfidence Int?
+  clientEmailReason String?
+  source          String        @default("email")
+  status          LeadStatus    @default(WAITING_FOR_SANDIP)
+  notes           String?
+  lastContactedAt DateTime?
+  lastInboundAt    DateTime?
+  lastOutboundAt   DateTime?
+  waitingForReply  Boolean       @default(false)
+  followupStage    Int           @default(0)
+  nextFollowUpAt  DateTime?
+  followupState    String?
+  followupStateUpdatedAt DateTime?
+  followupDraftId  String?
+  followupScheduledEmailId String?
+  timezone        String?
+  timezoneConfidence Int?
+  bestSendTime    DateTime?
+  lastRecommendedSendTime DateTime?
+  suggestedEmailAngle String?
+  replyProbability String?
+  intelligenceUpdatedAt DateTime?
+  assignedEmailAccount String?
+  assignedUser    String?
+  assignedAt      DateTime?
+  assignedBy      String?
+  currentMailbox  String?
+  communicationStatus String?
+  blockReason     String?
+  blockedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  threads         EmailThread[]
+  leadIntakes     LeadIntake[]
+  websiteVisits   WebsiteVisit[]
+  proposalViews   ProposalView[]
+  activityLogs    ActivityLog[]
+  scheduledEmails ScheduledEmail[]
+  qualification   LeadQualification?
+  clientBrain     ClientBrain?
+  whatsappContact WhatsAppContact?
+  whatsappMessages WhatsAppMessage[]
+
+  @@map("leads")
+  @@index([company])
+  @@index([website])
+  @@index([status, updatedAt])
+  @@index([assignedEmailAccount])
+  @@index([currentMailbox, status])
+  @@index([followupState, nextFollowUpAt])
+  @@index([communicationStatus, blockedAt])
+}
+
+model LeadQualification {
+  id                String   @id @default(cuid())
+  leadId            String   @unique
+  score             Int
+  classification    String
+  dealSizeEstimate  Int?
+  winProbability    Int
+  reasoning         Json
+  recommendedAction String?
+  confidence        Int?
+  scoredAt          DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lead              Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([classification, score])
+  @@map("lead_qualifications")
+}
+
+model ClientBrain {
+  id                  String   @id @default(cuid())
+  leadId              String   @unique
+  firstContactAt      DateTime?
+  interestedService   String?
+  budgetRange         String?
+  objections          Json?
+  painPoints          Json?
+  proposalHistory     Json?
+  preferredTone       String?
+  preferredEmailTime  String?
+  currentTemperature  String?
+  recommendedNextStep String?
+  summary             String?
+  decisionStage       String?
+  lastImportantEvent  String?
+  nextBestAction      String?
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  lead                Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([currentTemperature, decisionStage])
+  @@map("client_brains")
+}
+
+model LeadIntake {
+  id                       String       @id @default(cuid())
+  accountId                String
+  accountEmail             String?
+  leadId                   String?
+  messageId                String
+  fromEmail                String
+  fromName                 String?
+  subject                  String
+  rawText                  String?
+  rawHtml                  String?
+  rawEmail                 String?
+  leadGeneratorEmail       String?
+  extractedName            String?
+  extractedClientEmail     String?
+  extractedWebsite         String?
+  extractedPhone           String?
+  extractedCountry         String?
+  extractedService         String?
+  extractedCompany         String?
+  forwardedClientMessage   String?
+  originalClientMessage    String?
+  originalClientName       String?
+  originalClientEmail      String?
+  originalClientPhone      String?
+  originalWebsite          String?
+  originalCompany          String?
+  originalSubject          String?
+  originalConversationText String?
+  latestClientMessage      String?
+  previousProviderMessages String?
+  fullForwardedChain       String?
+  detectedIntent           String?
+  requestedItems           String[]     @default([])
+  recommendedReplyType     String?
+  leadSourceType           String?
+  conversationType         String?
+  replyMode                String?
+  forwardedBy              String?
+  providerEmail            String?
+  sourceFolder             String?
+  sourceFolderPath         String?
+  sourceProviderName       String?
+  detectedProviderName     String?
+  rejectedEmails           String[]     @default([])
+  extractionConfidence     Int          @default(0)
+  extractionReason         String?
+  parsingStatus            String       @default("PARSED")
+  needsManualConfirmation  Boolean      @default(false)
+  confirmedClientEmailAt   DateTime?
+  confirmedClientEmailBy   String?
+  approvalStatus           String?
+  sandipReviewRequired     Boolean      @default(false)
+  sandipDecisionStatus     String?
+  reviewerEmail            String?
+  reviewerComment          String?
+  reviewerCommentAt        DateTime?
+  allowContinueAsAbhay     Boolean      @default(false)
+  status                   LeadStatus   @default(WAITING_FOR_SANDIP)
+  receivedAt               DateTime
+  importedAt               DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  account                  EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  lead                     Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@unique([accountEmail, sourceFolderPath, messageId])
+  @@index([status, receivedAt])
+  @@index([accountEmail, receivedAt])
+  @@index([sourceFolderPath, receivedAt])
+  @@index([subject])
+  @@index([fromEmail])
+  @@index([extractedCompany])
+  @@index([extractedWebsite])
+  @@index([extractedClientEmail])
+  @@index([sandipReviewRequired, sandipDecisionStatus])
+  @@map("lead_intake")
+}
+
+model LeadImportJob {
+  id                String             @id @default(cuid())
+  accountId         String
+  accountEmail      String
+  status            String             @default("PENDING")
+  selectedFolders   String[]           @default([])
+  batchSize         Int                @default(50)
+  importedCount     Int                @default(0)
+  skippedCount      Int                @default(0)
+  errorCount        Int                @default(0)
+  currentFolderPath String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  pausedAt          DateTime?
+  lastError         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  account           EmailAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  folders           LeadImportFolder[]
+
+  @@index([accountId, status])
+  @@index([createdAt])
+  @@map("lead_import_jobs")
+}
+
+model LeadImportFolder {
+  id                 String        @id @default(cuid())
+  jobId              String
+  accountId          String
+  accountEmail       String
+  folderName         String
+  folderPath         String
+  sourceProviderName String?
+  status             String        @default("PENDING")
+  lastUidImported    Int           @default(0)
+  uidValidity        Int?
+  importedCount      Int           @default(0)
+  skippedCount       Int           @default(0)
+  errorCount         Int           @default(0)
+  startedAt          DateTime?
+  completedAt        DateTime?
+  lastError          String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  job                LeadImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, folderPath])
+  @@index([accountId, folderPath])
+  @@index([status, updatedAt])
+  @@map("lead_import_folders")
+}
+
+model EmailThread {
+  id             String       @id @default(cuid())
+  accountId      String
+  leadId         String?
+  subject        String
+  normalizedKey  String
+  lastMessageAt  DateTime?
+  readAt         DateTime?
+  messageCount   Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  account        EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  lead           Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  emails         Email[]
+  drafts         Draft[]
+  sentEmails     SentEmail[]
+  activityLogs   ActivityLog[]
+
+  @@unique([accountId, normalizedKey])
+  @@map("email_threads")
+}
+
+model Email {
+  id                  String         @id @default(cuid())
+  accountId           String
+  threadId            String
+  direction           EmailDirection @default(INBOUND)
+  messageId           String         @unique
+  inReplyTo           String?
+  references          String?
+  fromName            String?
+  fromEmail           String
+  toEmails            String[]
+  ccEmails            String[]       @default([])
+  bccEmails           String[]       @default([])
+  folder              String         @default("INBOX")
+  sourceFolder        String?
+  sourceFolderPath    String?
+  sourceProviderName  String?
+  imapUid             Int?
+  duplicateHash       String?
+  subject             String
+  normalizedSubject   String?
+  snippet             String?
+  textBody            String?
+  htmlBody            String?
+  attachmentMetadata  Json?
+  sentAt              DateTime
+  receivedAt          DateTime?
+  isAutoReply         Boolean        @default(false)
+  isBounce            Boolean        @default(false)
+  importedAt          DateTime       @default(now())
+  account             EmailAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  thread              EmailThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  drafts              Draft[]
+
+  @@index([threadId, sentAt])
+  @@index([accountId, folder, sentAt])
+  @@index([accountId, sourceFolderPath, imapUid])
+  @@index([accountId, duplicateHash])
+  @@index([fromEmail])
+  @@index([normalizedSubject])
+  @@index([subject])
+  @@map("emails")
+}
+
+model Draft {
+  id             String       @id @default(cuid())
+  threadId       String
+  sourceEmailId  String?
+  basedOnEmailId  String?
+  draftVersion   Int          @default(1)
+  basedOnMessageId String?
+  basedOnEmailDate DateTime?
+  isCurrent      Boolean      @default(true)
+  supersededAt   DateTime?
+  toEmails       String[]     @default([])
+  ccEmails       String[]     @default([])
+  bccEmails      String[]     @default([])
+  subject        String
+  body           String
+  bodyHtml       String?
+  bodyText       String?
+  attachmentMetadata Json?
+  draftType      DraftType    @default(REPLY)
+  followupStage  Int?
+  aiModel        String?
+  promptVersion  String?
+  confidence     Float?
+  trackingEnabled Boolean     @default(true)
+  status         DraftStatus  @default(DRAFT)
+  approvedAt     DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  thread         EmailThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sourceEmail    Email?       @relation(fields: [sourceEmailId], references: [id], onDelete: SetNull)
+  sentEmail      SentEmail?
+  edits          DraftEdit[]
+  scheduledEmails ScheduledEmail[]
+
+  @@index([threadId, isCurrent, createdAt])
+  @@map("drafts")
+}
+
+model ScheduledEmail {
+  id                     String   @id @default(cuid())
+  leadId                 String
+  draftId                String?
+  fromEmail              String
+  toEmail                String
+  cc                     String?
+  bcc                    String?
+  subject                String
+  body                   String
+  bodyHtml               String?
+  bodyText               String?
+  attachmentMetadata     Json?
+  scheduledAt            DateTime
+  clientTimezone         String?
+  clientLocalScheduledAt String?
+  status                 String   @default("SCHEDULED")
+  trackingEnabled        Boolean  @default(true)
+  failureReason          String?
+  sentAt                 DateTime?
+  createdBy              String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  lead                   Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  draft                  Draft?   @relation(fields: [draftId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledAt])
+  @@index([leadId, createdAt])
+  @@map("scheduled_emails")
+}
+
+model DraftEdit {
+  id             String   @id @default(cuid())
+  draftId        String
+  beforeSubject  String?
+  afterSubject   String?
+  beforeBody     String
+  afterBody      String
+  editSummary    String?
+  createdAt      DateTime @default(now())
+  draft          Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId, createdAt])
+  @@map("draft_edits")
+}
+
+model EmailSignature {
+  id          String       @id @default(cuid())
+  accountId   String?
+  name        String
+  html        String
+  plainText   String?
+  isDefault   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  account     EmailAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, isDefault])
+  @@map("email_signatures")
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  subject     String?
+  html        String
+  plainText   String?
+  isSystem    Boolean  @default(false)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, usageCount])
+  @@map("email_templates")
+}
+
+model WhatsAppBusinessAccount {
+  id                    String   @id @default(cuid())
+  enabled               Boolean  @default(false)
+  label                 String   @default("AResourcePool WhatsApp")
+  metaBusinessAccountId String?
+  phoneNumberId         String?
+  businessDisplayNumber String?
+  accessTokenEncrypted  String?
+  appSecretEncrypted    String?
+  webhookVerifyToken    String?
+  webhookSecretEncrypted String?
+  defaultCountry        String?
+  businessHours         Json?
+  dailySendLimit        Int      @default(50)
+  maxMessagesPerMinute  Int      @default(5)
+  status                String   @default("DISCONNECTED")
+  lastTestAt            DateTime?
+  lastError             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([enabled, status])
+  @@map("whatsapp_business_accounts")
+}
+
+model WhatsAppContact {
+  id                     String   @id @default(cuid())
+  leadId                 String   @unique
+  whatsappNumber         String?
+  countryCode            String?
+  preferredContactMethod String   @default("Email")
+  whatsappAvailable      String   @default("Unknown")
+  contactVerified        Boolean  @default(false)
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  lead                   Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([whatsappNumber])
+  @@map("whatsapp_contacts")
+}
+
+model WhatsAppMessage {
+  id                 String   @id @default(cuid())
+  leadId             String
+  businessAccountId  String?
+  direction          String   @default("OUTBOUND")
+  messageType        String   @default("TEXT")
+  phone              String
+  body               String
+  status             String   @default("DRAFT")
+  metaMessageId      String?
+  apiResponse        Json?
+  failureReason      String?
+  retryCount         Int      @default(0)
+  scheduledAt        DateTime?
+  sentAt             DateTime?
+  deliveredAt        DateTime?
+  readAt             DateTime?
+  receivedAt         DateTime?
+  createdBy          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  lead               Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([status, scheduledAt])
+  @@index([phone])
+  @@index([metaMessageId])
+  @@map("whatsapp_messages")
+}
+
+model SentEmail {
+  id             String      @id @default(cuid())
+  threadId       String
+  draftId        String?     @unique
+  providerId     String?
+  imapUid        String?
+  sentFolder     String?
+  appendedAt     DateTime?
+  appendStatus   String      @default("PENDING")
+  appendError    String?
+  rawMime        String?
+  toEmails       String[]
+  ccEmails       String[]    @default([])
+  bccEmails      String[]    @default([])
+  subject        String
+  body           String
+  bodyHtml       String?
+  bodyText       String?
+  sentAt         DateTime    @default(now())
+  thread         EmailThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  draft          Draft?      @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  engagement     EmailEngagement?
+  proposalViews  ProposalView[]
+
+  @@map("sent_emails")
+}
+
+model EmailEngagement {
+  id              String        @id @default(cuid())
+  sentEmailId     String        @unique
+  deliveryStatus  String        @default("ACCEPTED")
+  deliveredAt     DateTime?
+  openCount       Int           @default(0)
+  firstOpenAt     DateTime?
+  lastOpenAt      DateTime?
+  clickedLinks    Int           @default(0)
+  lastClickedAt   DateTime?
+  websiteVisits   Int           @default(0)
+  proposalViews   Int           @default(0)
+  engagementScore Int           @default(0)
+  leadScore       String        @default("Cold")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  sentEmail       SentEmail     @relation(fields: [sentEmailId], references: [id], onDelete: Cascade)
+  linkClicks      LinkClick[]
+  websiteVisitRows WebsiteVisit[]
+  proposalViewRows ProposalView[]
+
+  @@index([leadScore, engagementScore])
+  @@map("email_engagements")
+}
+
+model LinkClick {
+  id            String          @id @default(cuid())
+  engagementId  String
+  url           String
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  clickedAt     DateTime        @default(now())
+  engagement    EmailEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([engagementId, clickedAt])
+  @@map("link_clicks")
+}
+
+model WebsiteVisit {
+  id            String           @id @default(cuid())
+  engagementId  String?
+  leadId        String?
+  email         String?
+  pageUrl       String
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  visitedAt     DateTime         @default(now())
+  engagement    EmailEngagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
+  lead          Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([engagementId, visitedAt])
+  @@index([leadId, visitedAt])
+  @@map("website_visits")
+}
+
+model ProposalView {
+  id            String           @id @default(cuid())
+  engagementId  String?
+  sentEmailId   String?
+  leadId        String?
+  proposalId    String?
+  proposalUrl   String?
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  viewedAt      DateTime         @default(now())
+  engagement    EmailEngagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
+  sentEmail     SentEmail?       @relation(fields: [sentEmailId], references: [id], onDelete: SetNull)
+  lead          Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([engagementId, viewedAt])
+  @@index([leadId, viewedAt])
+  @@map("proposal_views")
+}
+
+model AiPrompt {
+  id          String   @id @default(cuid())
+  name        String
+  version     String
+  systemText  String
+  userText    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, version])
+  @@map("ai_prompts")
+}
+
+model AiKnowledgeItem {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  content     String
+  keywords    String[] @default([])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@map("ai_knowledge_items")
+}
+
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  content   String
+  embedding Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("knowledge_base")
+}
+
+model ApprovedEmailExample {
+  id                 String   @id @default(cuid())
+  emailType          String
+  leadIndustry       String?
+  clientCountry      String?
+  aiOriginalDraft    String
+  userFinalSentEmail String
+  editDifference     String?
+  wasSuccessful      Boolean?
+  createdAt          DateTime @default(now())
+
+  @@map("approved_email_examples")
+}
+
+model VectorChunk {
+  id          String   @id @default(cuid())
+  sourceType  String
+  sourceId    String
+  title       String
+  category    String
+  content     String
+  contentHash String
+  embedding   Json
+  metadata    Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sourceType, sourceId, contentHash])
+  @@index([sourceType, isActive])
+  @@index([category, isActive])
+  @@map("vector_chunks")
+}
+
+model TrackingSyncState {
+  id                  String   @id @default("default")
+  enabled             Boolean  @default(true)
+  gatewayBaseUrl      String?
+  lastTrackingEventId String?
+  lastSyncAt          DateTime?
+  lastHealthAt        DateTime?
+  lastHealthStatus    String?
+  lastError           String?
+  eventsPulled        Int      @default(0)
+  eventsImported      Int      @default(0)
+  eventsSkipped       Int      @default(0)
+  unmatchedEvents     Int      @default(0)
+  localDbStatus       String?
+  gatewayLatencyMs    Int?
+  syncDurationMs      Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("tracking_sync_state")
+}
+
+model TrackingGatewayEvent {
+  id          String   @id @default(cuid())
+  gatewayId   String   @unique
+  trackingId  String?
+  eventType   String?
+  originalUrl String?
+  ipAddress   String?
+  userAgent   String?
+  rawEvent    Json
+  matched     Boolean  @default(false)
+  importedAt  DateTime @default(now())
+  occurredAt  DateTime?
+
+  @@index([trackingId, eventType])
+  @@index([matched, importedAt])
+  @@map("tracking_gateway_events")
+}
+
+model AiUsageSetting {
+  id                         String   @id @default(cuid())
+  dailyTokenLimit            Int      @default(50000)
+  dailyCostLimit             Float    @default(5)
+  perUserDailyTokenLimit     Int?
+  perFeatureDailyTokenLimit  Json?
+  perFeatureDailyCostLimit   Json?
+  smallModel                 String   @default("gpt-4.1-mini")
+  mainModel                  String   @default("gpt-5.5")
+  bulkDraftsPerHour          Int      @default(10)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("ai_usage_settings")
+}
+
+model AutomationSetting {
+  id                         String   @id @default("default")
+  autoSyncEnabled            Boolean  @default(true)
+  autoClassifyEnabled        Boolean  @default(true)
+  autoCreateReplyDrafts      Boolean  @default(true)
+  autoCreateFollowupDrafts   Boolean  @default(true)
+  autoBlockDoNotContact      Boolean  @default(true)
+  autoSuggestSchedule        Boolean  @default(true)
+  followup1Days              Int      @default(3)
+  followup2Days              Int      @default(7)
+  followup3Days              Int      @default(14)
+  finalFollowupDays          Int      @default(21)
+  lastRunAt                  DateTime?
+  lastError                  String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("automation_settings")
+}
+
+model AiUsageLog {
+  id            String   @id @default(cuid())
+  feature       String
+  model         String
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  totalTokens   Int      @default(0)
+  estimatedCost Float    @default(0)
+  latencyMs     Int?
+  leadId        String?
+  userId        String?
+  cacheKey      String?
+  cacheHit      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([feature, createdAt])
+  @@index([leadId, createdAt])
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
+}
+
+model AiResponseCache {
+  id          String   @id @default(cuid())
+  cacheKey    String   @unique
+  feature     String
+  leadId      String?
+  action      String?
+  model       String
+  inputHash   String
+  outputJson  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([feature, leadId, createdAt])
+  @@map("ai_response_cache")
+}
+
+model ActivityLog {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  message   String
+  metadata  Json?
+  userId    String?
+  leadId    String?
+  threadId  String?
+  createdAt DateTime     @default(now())
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lead      Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  thread    EmailThread? @relation(fields: [threadId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@map("activity_logs")
+}
