@@ -27,6 +27,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies and build
+        run: |
+          export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/ai_sales_agent}"
+          export APP_SECRET="${APP_SECRET:-ci-build-placeholder-secret-32chars}"
+          export OPENAI_API_KEY="${OPENAI_API_KEY:-sk-build-placeholder}"
+          npm ci
+          npx prisma generate
+          npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
       - name: Install rsync and sshpass
         run: sudo apt-get update && sudo apt-get install -y rsync sshpass
 
@@ -46,12 +65,19 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             --exclude node_modules \
             --exclude .git \
-            --exclude .next \
             --exclude .env \
             --exclude .env.local \
             ./ ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_PATH }}/
 
-      - name: Build and restart application
+      - name: Verify synced files on server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no \
+            ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            "ls -la ${{ env.DEPLOY_PATH }}/src/components/AppShell.tsx ${{ env.DEPLOY_PATH }}/tsconfig.json ${{ env.DEPLOY_PATH }}/.next/BUILD_ID"
+
+      - name: Install dependencies and restart application
         uses: appleboy/ssh-action@v1.2.0
         env:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
