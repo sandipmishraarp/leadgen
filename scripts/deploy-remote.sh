@@ -9,9 +9,6 @@ cd "$DEPLOY_DIR"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is not installed on this Ubuntu server."
-  echo "Install Node ${NODE_VERSION} with:"
-  echo "  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -"
-  echo "  apt-get install -y nodejs"
   exit 1
 fi
 
@@ -25,17 +22,13 @@ echo "Using Node $(node -v) and npm $(npm -v)"
 required_files=(
   "package.json"
   "tsconfig.json"
+  ".next/BUILD_ID"
   "src/components/AppShell.tsx"
-  "src/components/AiUsageSettingsForm.tsx"
-  "src/components/ClientDateTime.tsx"
-  "src/lib/auth.ts"
-  "src/lib/services/ai-usage.ts"
 )
 
 for file in "${required_files[@]}"; do
   if [ ! -f "$file" ]; then
-    echo "Missing required file after sync: $file"
-    echo "Deploy upload may be incomplete. Check rsync step in GitHub Actions."
+    echo "Missing required file: $file"
     exit 1
   fi
 done
@@ -60,8 +53,12 @@ npx prisma generate
 echo "Applying database migrations..."
 npx prisma migrate deploy
 
-echo "Building Next.js application..."
-npm run build
+if [ ! -d .next ]; then
+  echo "Missing .next build output. Build should run in GitHub Actions before deploy."
+  exit 1
+fi
+
+echo "Using prebuilt Next.js output from CI (.next/BUILD_ID=$(cat .next/BUILD_ID))"
 
 if command -v pm2 >/dev/null 2>&1; then
   if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
