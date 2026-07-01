@@ -1,0 +1,70 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  SSH_HOST: 72.62.227.188
+  SSH_USER: root
+  DEPLOY_PATH: /var/www/html/leadgen
+  APP_NAME: leadgen
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare server directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: mkdir -p ${{ env.DEPLOY_PATH }}
+
+      - name: Upload application files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          source: ".,!node_modules,!.git,!.next,!.env,!.env.local"
+          target: ${{ env.DEPLOY_PATH }}
+          strip_components: 0
+          overwrite: true
+          timeout: 120s
+
+      - name: Build and restart application
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          APP_NAME: ${{ env.APP_NAME }}
+          NODE_VERSION: ${{ env.NODE_VERSION }}
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          envs: DEPLOY_PATH,APP_NAME,NODE_VERSION
+          script_stop: true
+          timeout: 30m
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            chmod +x scripts/deploy-remote.sh
+            APP_NAME="$APP_NAME" NODE_VERSION="$NODE_VERSION" ./scripts/deploy-remote.sh
