@@ -38,6 +38,7 @@ jobs:
           export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/ai_sales_agent}"
           export APP_SECRET="${APP_SECRET:-ci-build-placeholder-secret-32chars}"
           export OPENAI_API_KEY="${OPENAI_API_KEY:-sk-build-placeholder}"
+          export NEXT_PUBLIC_BASE_PATH="/leadgen"
           npm install -g npm@10.9.2
           npm ci
           npx prisma generate
