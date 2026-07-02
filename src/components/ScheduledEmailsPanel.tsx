@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -47,7 +46,7 @@ export function ScheduledEmailsPanel({ items }: { items: ScheduledEmailItem[] })
   async function action(id: string, kind: "cancel" | "send-now") {
     setBusy(`${kind}:${id}`);
     setMessage("");
-    const response = await apiFetch(`/api/scheduled-emails/${id}/${kind}`, { method: "POST" });
+    const response = await fetch(`/api/scheduled-emails/${id}/${kind}`, { method: "POST" });
     const data = await response.json();
     setBusy("");
     if (!response.ok) {
@@ -60,7 +59,7 @@ export function ScheduledEmailsPanel({ items }: { items: ScheduledEmailItem[] })
   async function processDue() {
     setBusy("process");
     setMessage("");
-    const response = await apiFetch("/api/scheduled-emails/process", { method: "POST" });
+    const response = await fetch("/api/scheduled-emails/process", { method: "POST" });
     const data = await response.json();
     setBusy("");
     if (!response.ok) {
@@ -149,7 +148,7 @@ function ScheduledEmailEdit({ item, onDone }: { item: ScheduledEmailItem; onDone
   async function save() {
     setSaving(true);
     setMessage("");
-    const response = await apiFetch(`/api/scheduled-emails/${item.id}`, {
+    const response = await fetch(`/api/scheduled-emails/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subject, body, trackingEnabled, scheduledClientLocalTime: scheduledClientLocalTime || undefined })

@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { ClientDateTime } from "@/components/ClientDateTime";
@@ -32,7 +31,7 @@ export function AutomationSettingsPanel({ settings }: { settings: AutomationSett
   async function save() {
     setSaving(true);
     setMessage("");
-    const response = await apiFetch("/api/automation-settings", {
+    const response = await fetch("/api/automation-settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)

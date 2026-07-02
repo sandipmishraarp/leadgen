@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -13,7 +12,7 @@ export function GenerateFirstReplyButton({ leadId }: { leadId: string }) {
   async function generate() {
     setLoading(true);
     setError("");
-    const response = await apiFetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
+    const response = await fetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
     const data = await response.json();
     setLoading(false);
     if (!response.ok) {

@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, FolderTree, Loader2, PlugZap, Save } from "lucide-react";
@@ -66,7 +65,7 @@ export function EmailAccountWizard() {
   }
 
   async function saveAccount() {
-    const response = await apiFetch("/api/email-accounts", {
+    const response = await fetch("/api/email-accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, accountName: form.accountName || form.emailAddress })
@@ -82,7 +81,7 @@ export function EmailAccountWizard() {
     setError(null);
     try {
       const id = accountId || await saveAccount();
-      const response = await apiFetch(`/api/email-accounts/${id}/test`, { method: "POST" });
+      const response = await fetch(`/api/email-accounts/${id}/test`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Connection test failed.");
     } catch (err) {
@@ -97,7 +96,7 @@ export function EmailAccountWizard() {
     setError(null);
     try {
       const id = accountId || await saveAccount();
-      const response = await apiFetch(`/api/email-accounts/${id}/folders`);
+      const response = await fetch(`/api/email-accounts/${id}/folders`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to discover folders.");
       setFolders(data.folders || []);
@@ -117,14 +116,14 @@ export function EmailAccountWizard() {
       const id = accountId || await saveAccount();
       await saveAccount();
       if (startImport && form.selectedFolders.length) {
-        const jobResponse = await apiFetch("/api/lead-import/jobs", {
+        const jobResponse = await fetch("/api/lead-import/jobs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ accountId: id, folderPaths: form.selectedFolders, batchSize: 50 })
         });
         const jobData = await jobResponse.json();
         if (!jobResponse.ok) throw new Error(jobData.error || "Unable to start import.");
-        await apiFetch(`/api/lead-import/jobs/${jobData.job.id}/run`, { method: "POST" });
+        await fetch(`/api/lead-import/jobs/${jobData.job.id}/run`, { method: "POST" });
       }
       router.push(`/email-accounts/${id}`);
       router.refresh();

@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -25,7 +24,7 @@ export function HybridReplyActions({
     if (blocked) return;
     setLoading(nextAction || "manual");
     setError("");
-    const response = await apiFetch("/api/drafts/manual", {
+    const response = await fetch("/api/drafts/manual", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ threadId })

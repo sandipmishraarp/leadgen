@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -16,7 +15,7 @@ export function SyncButton({ accountEmail, accountId, mode = "all" }: { accountE
     setLoading(true);
     setMessage(nextMode === "force-lead-intake-latest" ? "Force checking latest 100" : "Connecting");
     setSteps(["Connecting"]);
-    const response = await apiFetch("/api/mail/sync", {
+    const response = await fetch("/api/mail/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ limit: nextMode === "force-lead-intake-latest" ? 100 : limit, mode: nextMode, accountEmail, accountId })
@@ -38,7 +37,7 @@ export function SyncButton({ accountEmail, accountId, mode = "all" }: { accountE
     if (accountEmail) params.set("accountEmail", accountEmail);
     for (let attempt = 0; attempt < 90; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const response = await apiFetch(`/api/mail/sync?${params.toString()}`);
+      const response = await fetch(`/api/mail/sync?${params.toString()}`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) continue;
       if (data.status === "RUNNING") {

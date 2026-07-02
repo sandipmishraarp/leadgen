@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useMemo, useState } from "react";
 import { ClientDateTime } from "@/components/ClientDateTime";
 
@@ -21,7 +20,7 @@ export function WhatsAppLeadPanel({ lead, contactBlock }: { lead: any; contactBl
 
   async function saveContact() {
     await run(async () => {
-      const response = await apiFetch(`/api/leads/${lead.id}/whatsapp-contact`, {
+      const response = await fetch(`/api/leads/${lead.id}/whatsapp-contact`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contact)
@@ -38,7 +37,7 @@ export function WhatsAppLeadPanel({ lead, contactBlock }: { lead: any; contactBl
       return;
     }
     await run(async () => {
-      const response = await apiFetch(`/api/leads/${lead.id}/whatsapp-draft`, { method: "POST" });
+      const response = await fetch(`/api/leads/${lead.id}/whatsapp-draft`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to generate WhatsApp draft.");
       setMessages([data.message, ...messages]);
@@ -48,7 +47,7 @@ export function WhatsAppLeadPanel({ lead, contactBlock }: { lead: any; contactBl
 
   async function sendDraft(id: string) {
     await run(async () => {
-      const response = await apiFetch(`/api/whatsapp/messages/${id}/send`, { method: "POST" });
+      const response = await fetch(`/api/whatsapp/messages/${id}/send`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to send WhatsApp message.");
       setMessages(messages.map((message: any) => message.id === id ? data.message : message));

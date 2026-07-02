@@ -5,6 +5,20 @@ import { signToken, verifyToken } from "@/lib/crypto";
 
 export const SESSION_COOKIE = "arp_session";
 
+function sessionCookieOptions(maxAge: number) {
+  const appUrl = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  const secure = appUrl.startsWith("https://") || process.env.COOKIE_SECURE === "true";
+
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure,
+    path: basePath || "/",
+    maxAge
+  };
+}
+
 export async function getCurrentUser() {
   const token = cookies().get(SESSION_COOKIE)?.value;
   const payload = verifyToken(token);
@@ -24,21 +38,9 @@ export async function requireUser() {
 }
 
 export function setSessionCookie(response: NextResponse, userId: string) {
-  response.cookies.set(SESSION_COOKIE, signToken({ userId }), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 8
-  });
+  response.cookies.set(SESSION_COOKIE, signToken({ userId }), sessionCookieOptions(60 * 60 * 8));
 }
 
 export function clearSessionCookie(response: NextResponse) {
-  response.cookies.set(SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0
-  });
+  response.cookies.set(SESSION_COOKIE, "", sessionCookieOptions(0));
 }

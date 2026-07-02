@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -31,7 +30,7 @@ export function GenerateDraftButton({
     setLoading(true);
     setError("");
     setNotice("");
-    const response = await apiFetch("/api/drafts/generate", {
+    const response = await fetch("/api/drafts/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ threadId, draftType })

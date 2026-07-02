@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -203,7 +202,7 @@ export function ProfessionalEmailComposer({ initialHtml, initialText, subject, o
     const selectedText = empty ? "" : editor.state.doc.textBetween(from, to, "\n").trim();
     const sourceHtml = empty ? editor.getHTML() : textToHtml(selectedText);
     const sourceText = empty ? editor.getText() : selectedText;
-    const response = await apiFetch("/api/composer/ai", {
+    const response = await fetch("/api/composer/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, html: sourceHtml, text: sourceText, subject })
