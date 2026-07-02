@@ -45,6 +45,7 @@ fi
 export NODE_ENV=production
 
 echo "Installing dependencies..."
+npm install -g npm@10.9.2
 npm ci
 
 echo "Generating Prisma client..."
