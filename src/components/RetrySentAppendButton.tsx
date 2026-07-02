@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -12,7 +13,7 @@ export function RetrySentAppendButton({ sentEmailId }: { sentEmailId: string }) 
   async function retry() {
     setBusy(true);
     setMessage("");
-    const response = await fetch(`/api/sent-emails/${sentEmailId}/retry-append`, { method: "POST" });
+    const response = await apiFetch(`/api/sent-emails/${sentEmailId}/retry-append`, { method: "POST" });
     const data = await response.json();
     setBusy(false);
     if (!response.ok) {

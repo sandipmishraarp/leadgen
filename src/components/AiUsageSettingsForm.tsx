@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 
@@ -27,7 +28,7 @@ export function AiUsageSettingsForm({ settings }: { settings: Settings }) {
   async function save() {
     setSaving(true);
     setMessage("");
-    const response = await fetch("/api/ai-usage/settings", {
+    const response = await apiFetch("/api/ai-usage/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

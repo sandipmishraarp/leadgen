@@ -15,7 +15,9 @@ async function main() {
       passwordHash: hashPassword(password),
       role: "ADMIN"
     },
-    update: {}
+    update: {
+      passwordHash: hashPassword(password)
+    }
   });
 
   await prisma.aiPrompt.upsert({

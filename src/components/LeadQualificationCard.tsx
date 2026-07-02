@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import type { LeadQualification, Prisma } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,7 +29,7 @@ export function LeadQualificationCard({ leadId, qualification }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/leads/${leadId}/qualification`, { method: "POST" });
+      const response = await apiFetch(`/api/leads/${leadId}/qualification`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to recalculate qualification.");
       router.refresh();

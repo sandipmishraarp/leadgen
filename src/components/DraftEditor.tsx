@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -108,7 +109,7 @@ export function DraftEditor({
   async function save() {
     setSaving(true);
     setMessage("");
-    const response = await fetch(`/api/drafts/${draft.id}`, {
+    const response = await apiFetch(`/api/drafts/${draft.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload())
@@ -127,7 +128,7 @@ export function DraftEditor({
   async function confirmSend() {
     setSending(true);
     setMessage("");
-    const response = await fetch(`/api/drafts/${draft.id}/approve-send`, {
+    const response = await apiFetch(`/api/drafts/${draft.id}/approve-send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload())
@@ -151,7 +152,7 @@ export function DraftEditor({
     }
     setSending(true);
     setMessage("");
-    const response = await fetch("/api/scheduled-emails", {
+    const response = await apiFetch("/api/scheduled-emails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -231,7 +232,7 @@ export function DraftEditor({
   useEffect(() => {
     if (!showReview) return;
     let cancelled = false;
-    fetch(`/api/drafts/${draft.id}/safety-preview`, {
+    apiFetch(`/api/drafts/${draft.id}/safety-preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

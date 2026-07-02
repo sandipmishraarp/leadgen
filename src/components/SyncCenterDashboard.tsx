@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -37,7 +38,7 @@ export function SyncCenterDashboard({ initialSnapshot }: { initialSnapshot: Snap
   const completedSeen = useRef(new Set((initialSnapshot.jobs || []).filter((job) => job.status === "COMPLETED").map((job) => job.id)));
 
   async function refresh() {
-    const response = await fetch("/api/sync-center", { cache: "no-store" });
+    const response = await apiFetch("/api/sync-center", { cache: "no-store" });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to refresh Sync Center.");
     setSnapshot(data);

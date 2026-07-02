@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -18,7 +19,7 @@ export function FollowupSafeBulkActions({
   async function generateSafeDrafts() {
     setLoading(true);
     setMessage("Preparing safe draft queue...");
-    const response = await fetch("/api/followups/generate-safe", {
+    const response = await apiFetch("/api/followups/generate-safe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mailbox, limit: 10 })
