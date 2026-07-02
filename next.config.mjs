@@ -1,3 +1,7 @@
+import nextEnv from "@next/env";
+
+nextEnv.loadEnvConfig(process.cwd());
+
 /** @type {import('next').NextConfig} */
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
