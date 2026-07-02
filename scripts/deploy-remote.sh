@@ -61,15 +61,36 @@ fi
 
 echo "Using prebuilt Next.js output from CI (.next/BUILD_ID=$(cat .next/BUILD_ID))"
 
-if command -v pm2 >/dev/null 2>&1; then
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    echo "Restarting PM2 process: $APP_NAME"
-    pm2 restart "$APP_NAME" --update-env
-  else
-    echo "Starting PM2 process: $APP_NAME"
-    pm2 start npm --name "$APP_NAME" -- start
-    pm2 save
+APP_PORT="3001"
+if grep -q '^PORT=' .env; then
+  sed -i 's/^PORT=.*/PORT=3001/' .env
+else
+  echo "PORT=3001" >> .env
+fi
+
+export PORT="$APP_PORT"
+
+free_port() {
+  local port="$1"
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${port}/tcp" 2>/dev/null || true
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -ti:"${port}" | xargs -r kill -9 2>/dev/null || true
   fi
+  sleep 1
+}
+
+if command -v pm2 >/dev/null 2>&1; then
+  echo "Stopping existing PM2 process: $APP_NAME"
+  pm2 stop "$APP_NAME" 2>/dev/null || true
+  pm2 delete "$APP_NAME" 2>/dev/null || true
+
+  echo "Freeing port ${APP_PORT}..."
+  free_port "$APP_PORT"
+
+  echo "Starting PM2 process: $APP_NAME on port ${APP_PORT}"
+  pm2 start npm --name "$APP_NAME" --update-env -- start
+  pm2 save
 else
   echo "PM2 is not installed. On Ubuntu run: npm install -g pm2 && pm2 startup"
   exit 1
