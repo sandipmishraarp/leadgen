@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AlertTriangle, DownloadCloud, Loader2, PauseCircle, PlugZap, RefreshCw, RotateCcw } from "lucide-react";
@@ -91,7 +90,7 @@ export function SyncAllEmailAccountsButton() {
     setBusy(true);
     setError(null);
     try {
-      const response = await apiFetch("/api/email-accounts/sync-all", { method: "POST" });
+      const response = await fetch("/api/email-accounts/sync-all", { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to sync accounts.");
       router.refresh();

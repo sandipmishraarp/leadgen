@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
@@ -28,7 +27,7 @@ export function LeadIntakeTable({
     setError("");
     setLoading(true);
     try {
-      const response = await apiFetch(`/api/lead-intake/${item.id}`);
+      const response = await fetch(`/api/lead-intake/${item.id}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to load lead details");
       setDetail(data.item || item);

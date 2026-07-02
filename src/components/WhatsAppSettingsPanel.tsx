@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 
 export function WhatsAppSettingsPanel({ settings: initialSettings }: { settings: any }) {
@@ -13,7 +12,7 @@ export function WhatsAppSettingsPanel({ settings: initialSettings }: { settings:
     setSaving(true);
     setMessage("");
     try {
-      const response = await apiFetch("/api/whatsapp/settings", {
+      const response = await fetch("/api/whatsapp/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
@@ -33,7 +32,7 @@ export function WhatsAppSettingsPanel({ settings: initialSettings }: { settings:
     setTesting(true);
     setMessage("");
     try {
-      const response = await apiFetch("/api/whatsapp/test", { method: "POST" });
+      const response = await fetch("/api/whatsapp/test", { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Connection test failed.");
       setSettings(data.settings);

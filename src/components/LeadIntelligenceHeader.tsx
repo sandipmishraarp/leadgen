@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -63,7 +62,7 @@ export function LeadIntelligenceHeader({
     setMessage("");
     setProgressStep(0);
     setProgressOpen(true);
-    const response = await apiFetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
+    const response = await fetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
     const data = await response.json();
     setBusy("");
     if (!response.ok) {
@@ -88,7 +87,7 @@ export function LeadIntelligenceHeader({
   async function updateIntelligence() {
     setBusy("timezone");
     setMessage("");
-    const response = await apiFetch(`/api/leads/${leadId}/intelligence`, {
+    const response = await fetch(`/api/leads/${leadId}/intelligence`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ timezone, scheduleForBestTime: false })
@@ -137,7 +136,7 @@ export function LeadIntelligenceHeader({
       return;
     }
 
-    const response = await apiFetch("/api/scheduled-emails", {
+    const response = await fetch("/api/scheduled-emails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

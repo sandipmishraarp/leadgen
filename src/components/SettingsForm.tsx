@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 
@@ -36,7 +35,7 @@ export function SettingsForm({ account }: { account: Account }) {
     setMessage("");
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
-    const response = await apiFetch("/api/settings", {
+    const response = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -48,7 +47,7 @@ export function SettingsForm({ account }: { account: Account }) {
   async function testConnection() {
     setTesting(true);
     setMessage("");
-    const response = await apiFetch("/api/mail/test-connection", { method: "POST" });
+    const response = await fetch("/api/mail/test-connection", { method: "POST" });
     setTesting(false);
     setMessage(response.ok ? "IMAP and SMTP connection verified" : (await response.json()).error || "Connection failed");
   }

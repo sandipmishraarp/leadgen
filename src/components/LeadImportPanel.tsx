@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { ClientDateTime } from "@/components/ClientDateTime";
@@ -76,7 +75,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
   useEffect(() => {
     if (!activeJob?.id || !["RUNNING", "PENDING"].includes(activeJob.status)) return;
     const timer = window.setInterval(async () => {
-      const response = await apiFetch(`/api/lead-import/jobs/${activeJob.id}`);
+      const response = await fetch(`/api/lead-import/jobs/${activeJob.id}`);
       const data = await response.json().catch(() => null);
       if (response.ok && data?.job) {
         setActiveJob(data.job);
@@ -98,7 +97,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
     if (!accountId) return;
     setBusy(true);
     setMessage("");
-    const response = await apiFetch(`/api/email-accounts/${accountId}/folders`);
+    const response = await fetch(`/api/email-accounts/${accountId}/folders`);
     const data = await response.json();
     setBusy(false);
     if (!response.ok) {
@@ -117,7 +116,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
     }
     setBusy(true);
     setMessage("");
-    const response = await apiFetch("/api/lead-import/jobs", {
+    const response = await fetch("/api/lead-import/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accountId, folderPaths: paths, batchSize })
@@ -135,7 +134,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
   }
 
   async function refreshJobs() {
-    const response = await apiFetch("/api/lead-import/jobs");
+    const response = await fetch("/api/lead-import/jobs");
     const data = await response.json();
     if (response.ok) {
       setJobs(data.jobs || []);
@@ -148,7 +147,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
     if (!jobId) return;
     setBusy(true);
     setMessage("");
-    const response = await apiFetch(`/api/lead-import/jobs/${jobId}/run`, { method: "POST" });
+    const response = await fetch(`/api/lead-import/jobs/${jobId}/run`, { method: "POST" });
     const data = await response.json();
     setBusy(false);
     if (!response.ok) {
@@ -163,7 +162,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
   async function updateJob(action: "pause" | "resume") {
     if (!activeJob) return;
     setBusy(true);
-    const response = await apiFetch(`/api/lead-import/jobs/${activeJob.id}/${action}`, { method: "POST" });
+    const response = await fetch(`/api/lead-import/jobs/${activeJob.id}/${action}`, { method: "POST" });
     const data = await response.json();
     setBusy(false);
     if (!response.ok) {
@@ -178,7 +177,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
   async function jobAction(action: "stop" | "retry") {
     if (!activeJob) return;
     setBusy(true);
-    const response = await apiFetch(`/api/lead-import/jobs/${activeJob.id}`, {
+    const response = await fetch(`/api/lead-import/jobs/${activeJob.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action })
@@ -197,7 +196,7 @@ export function LeadImportPanel({ accounts, initialJobs }: { accounts: Account[]
   async function clearCompleted() {
     if (!accountId) return;
     setBusy(true);
-    const response = await apiFetch(`/api/lead-import/jobs?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
+    const response = await fetch(`/api/lead-import/jobs?accountId=${encodeURIComponent(accountId)}`, { method: "DELETE" });
     const data = await response.json();
     setBusy(false);
     if (!response.ok) {

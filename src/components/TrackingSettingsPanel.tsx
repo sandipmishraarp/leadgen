@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { ClientDateTime } from "@/components/ClientDateTime";
@@ -29,7 +28,7 @@ export function TrackingSettingsPanel({ state, apiKeyConfigured }: { state: Trac
   async function action(kind: "sync" | "health") {
     setBusy(kind);
     setMessage("");
-    const response = await apiFetch(`/api/tracking/${kind}`, { method: "POST" });
+    const response = await fetch(`/api/tracking/${kind}`, { method: "POST" });
     const data = await response.json();
     setBusy("");
     if (!response.ok) {

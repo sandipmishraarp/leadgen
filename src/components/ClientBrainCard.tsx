@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import type { ClientBrain, Prisma } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -36,7 +35,7 @@ export function ClientBrainCard({ leadId, clientBrain }: Props) {
     setLoading("refresh");
     setError(null);
     try {
-      const response = await apiFetch(`/api/leads/${leadId}/client-brain`, { method: "POST" });
+      const response = await fetch(`/api/leads/${leadId}/client-brain`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to refresh client brain.");
       setForm(toForm(data.clientBrain));
@@ -52,7 +51,7 @@ export function ClientBrainCard({ leadId, clientBrain }: Props) {
     setLoading("save");
     setError(null);
     try {
-      const response = await apiFetch(`/api/leads/${leadId}/client-brain`, {
+      const response = await fetch(`/api/leads/${leadId}/client-brain`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -85,7 +84,7 @@ export function ClientBrainCard({ leadId, clientBrain }: Props) {
     setLoading("draft");
     setError(null);
     try {
-      const response = await apiFetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
+      const response = await fetch(`/api/leads/${leadId}/first-reply-draft`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to generate draft.");
       router.refresh();

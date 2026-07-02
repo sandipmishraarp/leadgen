@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Mail } from "lucide-react";
 
@@ -24,7 +23,7 @@ export function useMailboxContext() {
     const mailboxFromUrl = url.searchParams.get("mailbox");
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) setSelectedId(saved);
-    apiFetch("/api/mailbox-context")
+    fetch("/api/mailbox-context")
       .then((response) => response.ok ? response.json() : { accounts: [] })
       .then((data) => {
         const nextAccounts = data.accounts || [];

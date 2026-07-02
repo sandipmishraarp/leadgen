@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -37,7 +36,7 @@ export function LeadReviewActions({ leadId }: { leadId: string }) {
   const [assignedEmailAccount, setAssignedEmailAccount] = useState("abhay@aresourcepool.com");
 
   useEffect(() => {
-    apiFetch("/api/mailbox-context")
+    fetch("/api/mailbox-context")
       .then((response) => response.ok ? response.json() : { accounts: [] })
       .then((data) => {
         const salesAccounts = (data.accounts || []).filter((account: AccountOption) =>
@@ -69,7 +68,7 @@ export function LeadReviewActions({ leadId }: { leadId: string }) {
 
   async function update(status: string, assignment?: { assignedUser: string; assignedEmailAccount: string }) {
     setBusy(status);
-    await apiFetch(`/api/leads/${leadId}`, {
+    await fetch(`/api/leads/${leadId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

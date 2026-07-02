@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -29,7 +28,7 @@ export function LeadIntakeActions({
     setBusy(action);
     setMessage("");
     const salesAction = action === "APPROVE" || action === "CONTINUE_ABHAY" || action === "GENERATE_ABHAY_DRAFT" || action === "ACCEPT_CONTINUE";
-    const response = await apiFetch(`/api/lead-intake/${intakeId}`, {
+    const response = await fetch(`/api/lead-intake/${intakeId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -172,7 +171,7 @@ export function BulkLeadIntakeActions() {
     }
     setBusy(action);
     setMessage("");
-    const response = await apiFetch("/api/lead-intake", {
+    const response = await fetch("/api/lead-intake", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, ids })

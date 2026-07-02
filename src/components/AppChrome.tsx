@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -104,7 +103,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    apiFetch("/api/notifications")
+    fetch("/api/notifications")
       .then((response) => response.ok ? response.json() : null)
       .then((data) => {
         const items = Array.isArray(data?.notifications)
@@ -134,7 +133,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     const handle = window.setTimeout(async () => {
       const params = new URLSearchParams({ q: term });
       if (mailbox.activeAccount?.emailAddress) params.set("mailbox", mailbox.activeAccount.emailAddress);
-      const response = await apiFetch(`/api/search?${params.toString()}`);
+      const response = await fetch(`/api/search?${params.toString()}`);
       const data = await response.json().catch(() => null);
       setSearchGroups(data?.groups || {});
       setSearchOpen(true);

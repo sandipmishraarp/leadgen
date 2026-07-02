@@ -1,6 +1,5 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -14,7 +13,7 @@ export function SyncCenterRunButton() {
     setBusy(true);
     setError(null);
     try {
-      const response = await apiFetch("/api/sync-center/run", { method: "POST" });
+      const response = await fetch("/api/sync-center/run", { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to run sync.");
       router.refresh();
