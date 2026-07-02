@@ -42,11 +42,9 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-export NODE_ENV=production
-
 echo "Installing dependencies..."
 npm install -g npm@10.9.2
-npm ci
+npm ci --include=dev
 
 echo "Generating Prisma client..."
 npx prisma generate
@@ -60,6 +58,8 @@ if [ ! -d .next ]; then
 fi
 
 echo "Using prebuilt Next.js output from CI (.next/BUILD_ID=$(cat .next/BUILD_ID))"
+
+export NODE_ENV=production
 
 APP_PORT="3001"
 if grep -q '^PORT=' .env; then
