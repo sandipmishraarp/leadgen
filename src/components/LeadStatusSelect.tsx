@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -27,7 +28,7 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
 
   async function update(next: string) {
     setValue(next);
-    await fetch(`/api/leads/${leadId}`, {
+    await apiFetch(`/api/leads/${leadId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next })

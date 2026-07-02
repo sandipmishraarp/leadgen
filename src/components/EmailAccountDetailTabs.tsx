@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -33,7 +34,7 @@ export function EmailAccountDetailTabs({ account }: { account: any }) {
     setLoading("folders");
     setError(null);
     try {
-      const response = await fetch(`/api/email-accounts/${account.id}/folders`);
+      const response = await apiFetch(`/api/email-accounts/${account.id}/folders`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to refresh folders.");
       setFolders(data.flatFolders || []);
@@ -48,7 +49,7 @@ export function EmailAccountDetailTabs({ account }: { account: any }) {
     setLoading("save");
     setError(null);
     try {
-      const response = await fetch(`/api/email-accounts/${account.id}`, {
+      const response = await apiFetch(`/api/email-accounts/${account.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
